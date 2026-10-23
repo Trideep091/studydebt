@@ -21,7 +21,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
       dockerfile_inline: |
         FROM node:20-slim AS builder
         WORKDIR /app

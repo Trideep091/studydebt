@@ -54,37 +54,43 @@ StudyDebt is a creative, premium, liquid-glass-themed study recovery application
 
 ```
 studydebt/
-├── frontend/                  # React 19 + TypeScript + Vite
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── layout/       # Responsive Shell, Navbar, Sidebar
-│   │   │   ├── brand/        # Custom SVG StudyDebt logo & marks
-│   │   │   ├── ui/           # Liquid Glass cards, buttons, modals, badges
-│   │   │   ├── dashboard/    # Hero, StatsOverview, HaveTenMinutes, NextSmallWin
-│   │   │   ├── backlog/      # TopicCard, TopicModal, BacklogManager
-│   │   │   ├── screenshots/  # ScreenshotVault, ScreenshotDetailModal
-│   │   │   ├── study/        # FocusSessionView, SetupModal, SummaryModal
-│   │   │   ├── planner/      # WeeklyPlannerView, TaskCard, RebalanceModal
-│   │   │   ├── revision/     # RevisionQueueView, Spaced repetition cards
-│   │   │   ├── progress/     # BacklogDebtTracker, Activity rhythm chart
-│   │   │   └── settings/     # AI config, backup export/import, privacy
-│   │   ├── services/
-│   │   │   ├── db/           # IndexedDB repository layer
-│   │   │   ├── ai/           # Frontend AI client & fallback handling
-│   │   │   └── scheduler/    # Deterministic recommendation, SM-2, rebalance
-│   │   └── test/             # Vitest unit tests
-├── backend/                   # Python 3 + FastAPI
+├── index.html                 # Entry point in the root directory
+├── package.json               # Frontend dependencies & scripts
+├── vite.config.ts             # Vite configuration
+├── tsconfig.json              # TypeScript root configuration
+├── public/                    # Favicon & static assets
+├── src/                       # React 19 + TypeScript frontend application
+│   ├── components/
+│   │   ├── layout/            # Responsive Shell, Navbar, Sidebar
+│   │   ├── brand/             # Custom SVG StudyDebt logo & marks
+│   │   ├── ui/                # Liquid Glass cards, buttons, modals, badges
+│   │   ├── dashboard/         # Hero, StatsOverview, HaveTenMinutes, NextSmallWin
+│   │   ├── backlog/           # TopicCard, TopicModal, BacklogManager
+│   │   ├── screenshots/       # ScreenshotVault, ScreenshotDetailModal
+│   │   ├── study/             # FocusSessionView, SetupModal, SummaryModal
+│   │   ├── planner/           # WeeklyPlannerView, TaskCard, RebalanceModal
+│   │   ├── revision/          # RevisionQueueView, Spaced repetition cards
+│   │   ├── progress/          # BacklogDebtTracker, Activity rhythm chart
+│   │   └── settings/          # AI config, backup export/import, privacy
+│   ├── services/
+│   │   ├── db/                # IndexedDB repository layer
+│   │   ├── ai/                # Frontend AI client & fallback handling
+│   │   └── scheduler/         # Deterministic recommendation, SM-2, rebalance
+│   └── test/                  # Vitest unit tests
+├── backend/                   # Python 3 + FastAPI service
 │   ├── app/
-│   │   ├── config.py         # Settings & environment variables
-│   │   ├── main.py           # FastAPI gateway with CORS
-│   │   ├── schemas/ai.py     # Pydantic schemas for structured JSON output
+│   │   ├── config.py          # Settings & environment variables
+│   │   ├── main.py            # FastAPI gateway with CORS
+│   │   ├── schemas/ai.py      # Pydantic schemas for structured JSON output
 │   │   ├── services/
-│   │   │   ├── ai_service.py # Provider-agnostic inference layer
-│   │   │   ├── ocr_service.py# PDF & image processing (pypdf, Pillow)
+│   │   │   ├── ai_service.py  # Provider-agnostic inference layer
+│   │   │   ├── ocr_service.py # PDF & image processing (pypdf, Pillow)
 │   │   │   └── prompt_templates.py # Structured JSON prompts
-│   │   └── api/routes/       # AI & OCR endpoints
-│   ├── requirements.txt      # Frozen backend dependencies
-│   └── tests/                # Pytest automated test suite
+│   │   └── api/routes/        # AI & OCR endpoints
+│   ├── requirements.txt       # Frozen backend dependencies
+│   └── tests/                 # Pytest automated test suite
+├── docker-compose.yml         # Containerized deployment config
+└── README.md
 ```
 
 ---
@@ -107,7 +113,19 @@ StudyDebt uses a provider-independent architecture:
 - Node.js (v18+) & npm
 - Python (v3.10+)
 
-### 1. Backend Setup
+### 1. Frontend Setup (From Root Directory)
+
+```bash
+# In the project root:
+npm install
+
+# Start Vite dev server
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -128,23 +146,22 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 The backend API will be live at `http://127.0.0.1:8000` (API Docs at `http://127.0.0.1:8000/docs`).
 
-### 2. Frontend Setup
-
-```bash
-cd frontend
-
-# Install npm packages
-npm install
-
-# Start Vite dev server
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
-
 ---
 
 ## 🧪 Testing
+
+### Frontend Tests (Vitest)
+```bash
+# Run from project root:
+npm test
+```
+Runs 6 automated tests verifying the Next Small Win recommendation algorithm, spaced repetition intervals, and weekly planner rebalancing.
+
+### Production Build
+```bash
+# Run from project root:
+npm run build
+```
 
 ### Backend Tests (pytest)
 ```bash
@@ -152,19 +169,6 @@ cd backend
 PYTHONPATH=. venv/bin/pytest tests
 ```
 Runs 7 automated tests verifying API endpoints, prompt serialization, micro-learning generation, and weekly planning.
-
-### Frontend Tests (Vitest)
-```bash
-cd frontend
-npm test
-```
-Runs 6 automated tests verifying the Next Small Win recommendation algorithm, spaced repetition intervals, and weekly planner rebalancing.
-
-### Production Build
-```bash
-cd frontend
-npm run build
-```
 
 ---
 
@@ -185,7 +189,7 @@ npm run build
 
 ## 🚢 Deployment Architecture
 
-- **Frontend**: Can be deployed to **Vercel**, **Cloudflare Pages**, or **Netlify** (`npm run build`, output directory: `dist`).
+- **Frontend**: Can be deployed to **Vercel**, **Cloudflare Pages**, or **Netlify** with zero extra folder configuration because `index.html` and `package.json` are at the repository root (`npm run build`, output: `dist`).
 - **Backend**: Can be deployed to **Render**, **Railway**, **Fly.io**, or **AWS ECS** using the FastAPI ASGI runner.
 - **Open-Weight Runtime**: In production, configure `AI_PROVIDER=openai_compatible` with a dedicated open-weight host (such as vLLM on a GPU instance, Groq Llama 3.3, or Together AI).
 
