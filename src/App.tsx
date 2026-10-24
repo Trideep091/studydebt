@@ -46,6 +46,7 @@ import {
   seedInitialDataIfEmpty,
 } from './services/db/indexedDb';
 import { calculateNextRevision } from './services/scheduler/spacedRepetition';
+import { setApiBaseUrl } from './services/ai/client';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
@@ -59,7 +60,10 @@ export function App() {
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings>({
     studentName: '',
-    aiEndpointUrl: 'http://localhost:8000',
+    aiEndpointUrl:
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      (import.meta.env.DEV ? 'http://localhost:8000' : ''),
     aiModel: 'open-weight-default',
     dailyStudyTargetMinutes: 45,
     allowRemoteInference: false,
@@ -129,6 +133,9 @@ export function App() {
       setRevisionRecords(allRevisions);
       setWeeklyPlan(currentPlan || null);
       setUserSettings(settings);
+      if (settings?.aiEndpointUrl !== undefined) {
+        setApiBaseUrl(settings.aiEndpointUrl);
+      }
       setStats(computedStats);
     } catch (err) {
       console.error('Failed to load local data', err);

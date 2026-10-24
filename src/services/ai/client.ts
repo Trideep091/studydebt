@@ -8,7 +8,25 @@ import type {
   SessionMode,
 } from '../../types';
 
-const API_BASE_URL = 'http://localhost:8000';
+// Backend URL resolution:
+// 1. Build-time environment variable VITE_API_URL or VITE_API_BASE_URL
+// 2. In local development (import.meta.env.DEV), default to local FastAPI server 'http://localhost:8000'
+// 3. In production builds, default to empty string '' if no production URL was provided
+const INITIAL_API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000' : '')
+).replace(/\/+$/, '');
+
+let activeApiBaseUrl = INITIAL_API_BASE_URL;
+
+export function setApiBaseUrl(url: string): void {
+  activeApiBaseUrl = (url || '').trim().replace(/\/+$/, '');
+}
+
+export function getApiBaseUrl(): string {
+  return activeApiBaseUrl;
+}
 
 export interface AIHealthStatus {
   status: 'online' | 'degraded' | 'offline';
@@ -19,9 +37,22 @@ export interface AIHealthStatus {
   details?: string;
 }
 
-export async function checkAIHealth(): Promise<AIHealthStatus> {
+export async function checkAIHealth(customEndpoint?: string): Promise<AIHealthStatus> {
+  const endpoint = (customEndpoint !== undefined ? customEndpoint : getApiBaseUrl()).trim().replace(/\/+$/, '');
+
+  if (!endpoint) {
+    return {
+      status: 'offline',
+      provider: 'client-offline',
+      model: 'client-engine',
+      endpoint: 'No remote AI backend configured',
+      isConnected: false,
+      details: 'No production AI backend URL is configured. StudyDebt is running in client-side educational fallback mode.',
+    };
+  }
+
   try {
-    const res = await fetch(`${API_BASE_URL}/api/ai/health`, {
+    const res = await fetch(`${endpoint}/api/ai/health`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -31,7 +62,7 @@ export async function checkAIHealth(): Promise<AIHealthStatus> {
         status: data.status,
         provider: data.provider,
         model: data.model,
-        endpoint: data.endpoint,
+        endpoint: data.endpoint || endpoint,
         isConnected: data.is_connected,
         details: data.details,
       };
@@ -43,9 +74,9 @@ export async function checkAIHealth(): Promise<AIHealthStatus> {
     status: 'offline',
     provider: 'ollama',
     model: 'llama3.2',
-    endpoint: API_BASE_URL,
+    endpoint,
     isConnected: false,
-    details: 'Backend service offline or unreachable. Using client-side educational engine.',
+    details: `Backend at ${endpoint} is offline or unreachable. Using client-side educational engine.`,
   };
 }
 
@@ -54,22 +85,25 @@ export async function summarizeScreenshot(
   subjectHint: string = '',
   targetMinutes: number = 10
 ): Promise<SmartOverview> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/ai/summarize-screenshot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        extracted_text: extractedText,
-        subject_hint: subjectHint,
-        target_review_minutes: targetMinutes,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+  const baseUrl = getApiBaseUrl();
+  if (baseUrl) {
+    try {
+      const res = await fetch(`${baseUrl}/api/ai/summarize-screenshot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          extracted_text: extractedText,
+          subject_hint: subjectHint,
+          target_review_minutes: targetMinutes,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (err) {
+      console.warn('API call failed, falling back to local extractor', err);
     }
-  } catch (err) {
-    console.warn('API call failed, falling back to local extractor', err);
   }
 
   // Graceful client fallback
@@ -119,26 +153,29 @@ export async function generateMicroStudy(
   description: string = '',
   objectives: string[] = []
 ): Promise<MicroLearningContent> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/ai/generate-microstudy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topic_title: topicTitle,
-        subject,
-        duration_minutes: durationMinutes,
-        energy_level: energyLevel,
-        mode,
-        description,
-        learning_objectives: objectives,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+  const baseUrl = getApiBaseUrl();
+  if (baseUrl) {
+    try {
+      const res = await fetch(`${baseUrl}/api/ai/generate-microstudy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic_title: topicTitle,
+          subject,
+          duration_minutes: durationMinutes,
+          energy_level: energyLevel,
+          mode,
+          description,
+          learning_objectives: objectives,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (err) {
+      console.warn('Backend call failed, using client fallback', err);
     }
-  } catch (err) {
-    console.warn('Backend call failed, using client fallback', err);
   }
 
   // Client-side fallback
@@ -181,24 +218,27 @@ export async function generateWeeklyPlan(
   daysCount: number,
   dailyCapacities: Record<string, number>
 ): Promise<{ tasks: any[]; summary: string }> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/ai/plan-week`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        workload_description: workload,
-        target_window: targetWindow,
-        start_date: startDate,
-        days_count: daysCount,
-        daily_available_minutes: dailyCapacities,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { tasks: data.tasks, summary: data.summary };
+  const baseUrl = getApiBaseUrl();
+  if (baseUrl) {
+    try {
+      const res = await fetch(`${baseUrl}/api/ai/plan-week`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workload_description: workload,
+          target_window: targetWindow,
+          start_date: startDate,
+          days_count: daysCount,
+          daily_available_minutes: dailyCapacities,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { tasks: data.tasks, summary: data.summary };
+      }
+    } catch (err) {
+      console.warn('API call failed, generating deterministic schedule', err);
     }
-  } catch (err) {
-    console.warn('API call failed, generating deterministic schedule', err);
   }
 
   // Deterministic schedule generator

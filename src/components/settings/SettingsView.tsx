@@ -44,8 +44,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onDataReset,
   onShowToast,
 }) => {
+  const defaultEndpoint =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.DEV ? 'http://localhost:8000' : '');
   const [studentName, setStudentName] = useState(settings.studentName || '');
-  const [endpointUrl, setEndpointUrl] = useState(settings.aiEndpointUrl || 'http://localhost:8000');
+  const [endpointUrl, setEndpointUrl] = useState(settings.aiEndpointUrl ?? defaultEndpoint);
   const [model, setModel] = useState(settings.aiModel || 'open-weight-default');
   const [dailyTarget, setDailyTarget] = useState(settings.dailyStudyTargetMinutes || 45);
   const [allowRemote, setAllowRemote] = useState(settings.allowRemoteInference || false);
@@ -54,19 +58,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    handleCheckConnection();
-  }, []);
-
-  const handleCheckConnection = async () => {
+  const handleCheckConnection = async (targetUrl?: string | unknown) => {
     setIsCheckingHealth(true);
     try {
-      const res = await checkAIHealth();
+      const urlToTest = typeof targetUrl === 'string' ? targetUrl : endpointUrl;
+      const res = await checkAIHealth(urlToTest);
       setHealthStatus(res);
     } finally {
       setIsCheckingHealth(false);
     }
   };
+
+  useEffect(() => {
+    handleCheckConnection(settings.aiEndpointUrl ?? defaultEndpoint);
+  }, []);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,7 +253,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <input
                 type="text"
                 className="input"
-                placeholder="http://localhost:8000"
+                placeholder={defaultEndpoint || "https://api.your-backend.com"}
                 value={endpointUrl}
                 onChange={(e) => setEndpointUrl(e.target.value)}
               />

@@ -281,7 +281,10 @@ export async function getRevisionRecordByTopicId(topicId: string): Promise<Revis
 
 const DEFAULT_SETTINGS: UserSettings = {
   studentName: '',
-  aiEndpointUrl: 'http://localhost:8000',
+  aiEndpointUrl:
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.DEV ? 'http://localhost:8000' : ''),
   aiModel: 'open-weight-default',
   dailyStudyTargetMinutes: 45,
   allowRemoteInference: false,
